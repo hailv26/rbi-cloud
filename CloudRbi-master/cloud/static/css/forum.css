@@ -65,7 +65,7 @@
     background-color: #d5d5d5;
 }
 .forum-block-comment tr{
-    border: 1px solid #8c8c8c ;
+    border: 0px solid #8c8c8c ;
     opacity: 5;
 }
 .forum-user-comment{
@@ -89,4 +89,7 @@
     padding-top: 2px;
     padding-bottom: 2px;
     font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+.forum-noti-background{
+    background-color: #e5e5e5;
 }

@@ -1029,7 +1029,6 @@ class ZPosts(models.Model):
     time = models.DateTimeField(blank=True, null=True)
     tag = models.CharField(max_length=100, null=True, blank=True)
     views = models.IntegerField(blank=True, null=True)
-
     class Meta:
         managed = False
         db_table = 'z_posts'
@@ -1054,7 +1053,7 @@ class ZNotification(models.Model):
     object = models.CharField(max_length=100, blank=True, null=True)
     link = models.CharField(max_length=200, blank=True, null=True)
     time = models.DateTimeField(blank=True, null=True)
-    state = models.IntegerField(blank=True, null=True)
+    state = models.IntegerField(blank=True, null=True, default=0)
 
     class Meta:
         managed = False

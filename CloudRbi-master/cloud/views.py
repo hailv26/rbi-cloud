@@ -7,7 +7,7 @@ application = get_wsgi_application()
 
 from PIL.PngImagePlugin import _idat
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, HttpResponse
 from django.http import Http404
 from cloud import models
 from dateutil.relativedelta import relativedelta
@@ -25,6 +25,12 @@ from django.db.models import Q
 from django.contrib.auth import login
 
 # Create your views here.
+def signup_citizen(request):
+    return render(request,'Signup/sign_up-citizen.html')
+def signup_business(request):
+    return render(request,'Signup/sign_up_business.html')
+def signup_management(request):
+    return render(request,'Signup/sign_up_management.html')
 def citizen_home(request):
     if request.session['kind']=='citizen':
         return render(request, 'CitizenUI/CitizenHome.html',{'info':request.session})
@@ -50,6 +56,7 @@ def handler404(request):
     return render(request, '404/404.html', locals())
 ################ Business UI Control ###################
 def ListFacilities(request, siteID):
+    siteID=request.session['id']
     try:
         risk = []
 
@@ -2663,8 +2670,8 @@ def signin(request):
     if request.session.has_key('id'):
         if request.session['kind']=='citizen':
             return redirect('citizenHome')
-        elif request.session['kind']=='factory':
-            return redirect('facilitiesDisplay',3)
+        elif request.session['kind']=='business':
+            return redirect('facilitiesDisplay',request.session['id'])
         elif request.session['kind']=='manager':
             return  redirect('manager')
     else:
@@ -2683,8 +2690,8 @@ def signin(request):
                 request.session.set_expiry(0)
                 if request.session['kind']=='citizen':
                     return redirect('citizenHome')
-                elif request.session['kind']=='factory':
-                    return redirect('forum')
+                elif request.session['kind']=='business':
+                    return redirect('facilitiesDisplay',request.session['id'])
                 else:
                     return redirect('manager')
             else:
@@ -2706,8 +2713,22 @@ def base_forum(request):
             xtag=request.POST.get('txttag')
             a=models.ZPosts(title=xtitle,tag=xtag,content=xcontent,time=datetime.now(),id_user=request.session['id'],views=0)
             a.save()
+        mang=[]
         data=models.ZPosts.objects.all()
-        return render(request,'BaseUI/BaseForum/forumhome.html',{'data':data})
+        for dataposts in data:
+            posts={}
+            posts['id']=dataposts.id
+            posts['id_user']=dataposts.id_user
+            posts['title']=dataposts.title
+            posts['content']=dataposts.content
+            posts['time']=dataposts.time
+            posts['tag']=dataposts.tag
+            posts['views']=dataposts.views
+            posts['reply']=models.ZComment.objects.all().filter(id_posts=dataposts.id).count()
+            mang.append(posts)
+        noti=models.ZNotification.objects.all().filter(id_user=request.session['id'])
+        countnoti=noti.filter(state=0).count()
+        return render(request,'BaseUI/BaseForum/forumhome.html',{'data':mang, 'noti':noti, 'countnoti':countnoti})
     else:
         return redirect('home')
 
@@ -2715,6 +2736,12 @@ def posts_forum(request,postID):
     a=models.ZPosts.objects.filter(id=postID)[0]
     a.views+=1
     a.save()
+    nameuserpost=models.ZUser.objects.all().filter(id=a.id_user)[0].name
+    if request.session['id']==a.id_user:
+        noti=models.ZNotification.objects.all().filter(link=postID)
+        for notifi in noti:
+            notifi.state=1
+            notifi.save()
     if 'btncomment' in request.POST:
         xcontent=request.POST.get('txtcomment')
         data=models.ZComment(content=xcontent,time=datetime.now(),id_posts=postID,id_user=request.session['id'])
@@ -2723,15 +2750,19 @@ def posts_forum(request,postID):
         id_user=models.ZPosts.objects.all().filter(id=postID)[0].id_user #Lấy ID người đăng bài
         title_post = models.ZPosts.objects.all().filter(id=postID)[0].title
         if request.session['id']!=id_user:
-            noti=models.ZNotification(id_user=id_user,subject=request.session['name'],content=' đã phản hồi bài viết ', object=title_post,link=postID)
+            noti=models.ZNotification(id_user=id_user,subject=request.session['name'],content=' đã phản hồi bài viết ', object=title_post,link=postID,time=datetime.now())
             noti.save()
 
     comment=models.ZComment.objects.all().filter(id_posts=postID)#Lấy dữ liệu comment của this post
-    mang=[]
+    datacmt=[]
     for data in comment:
         cmt={}
         cmt['name']=models.ZUser.objects.all().filter(id=data.id_user)[0].name
         cmt['content']=data.content
-        mang.append(cmt)#mang chua Du lieu cac comment
+        datacmt.append(cmt)#mang chua Du lieu cac comment
+    noti = models.ZNotification.objects.all().filter(id_user=request.session['id'])
+    countnoti = noti.filter(state=0).count()
+    return render(request,'BaseUI/BaseForum/forumposts.html',{'data':a,'nameuserpost':nameuserpost,'datacmt':datacmt,'session':request.session,'noti':noti, 'countnoti':countnoti})
 
-    return render(request,'BaseUI/BaseForum/forumposts.html',{'data':a,'datacmt':mang,'session':request.session})
+
+

@@ -65,6 +65,9 @@ urlpatterns = [
     path('forum',views.base_forum,name='forum'),
     path('forum/post/<int:postID>',views.posts_forum,name='posts'),
     path('logout',views.logout,name='logout'),
+    path('signup/citizen',views.signup_citizen,name='signupcitizen'),
+    path('signup/business',views.signup_business,name='signupbusiness'),
+    path('signup/management',views.signup_management,name='signupmanagement'),
 ]
 handler404 = 'cloud.views.handler404'
 handler500 = 'cloud.views.handler404'
